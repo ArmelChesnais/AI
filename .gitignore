@@ -1,0 +1,16 @@
+CGI-Executables/
+old/
+share/
+Webserver/
+bootstrap/
+Minecraft/
+Natasha/
+phpinfo.php
+phpMyAdmin
+Projects/
+media/
+constants.php
+psl-config.php
+.DS_Store
+deploy.php
+*.sql
