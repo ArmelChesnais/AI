@@ -10,16 +10,16 @@ var changesList = new Array();
 function gameStart() {
 
 //myGamePiece = new component(30, 30, "red", 10, 120);
-    myGamePiece = new character("media/1.png", 10.0, 120.0, 8, 2.0);
+    myGamePiece = new character("media/2.png", new frvector([10.0,120.0]), 8, 50.0);
     sourceArts["miscDoodads"] = new sourceArt("media/obj_misk_atlas.png");
     doodadArts["wood"] = new doodadArt("miscDoodads", 1, 12);
     doodadArts["chicken"] = new doodadArt("miscDoodads", 1, 26);
-    doodads.push( new doodad(20, 50, "wood") );
-    doodads.push( new doodad(50, 30, "wood") );
-    doodads.push( new doodad(70, 200, "chicken") );
-    worldState["hunger"] = 30.0;
+    doodads.push( new doodad(new frvector([20, 50]), "wood") );
+    doodads.push( new doodad(new frvector([50, 30]), "wood") );
+    doodads.push( new doodad(new frvector([70, 200]), "chicken") );
+    worldState["hunger"] = 80.0;
     worldState["hungerAmp"] = 100.0;
-    worldState["food"] = 0.0;
+    worldState["food"] = 10.0;
     worldState["chicken"] = 0.0;
     worldState["money"] = 20.0;
     worldState["moneyAmp"] = 0.50;
@@ -27,12 +27,13 @@ function gameStart() {
     
     //changesList["money"] = -10.0;
     //changesList["test"] = 5.0;
-    actions["eatFood"] = new action("eat food",{food:1.0},{food:-1.0,hunger:20.0});
-    actions["cookChicken"] = new action("cook chicken",{chicken:1.0,hunger:1.0},{chicken:-1.0,food:4.0, hunger:-1.0});
-    actions["sellFood"] = new action("sell food",{food:1.0},{food:-1.0,money:10.0});
-    actions["buyFood"] = new action("buy food",{money:20.0},{food:1.0,money:-20.0});
-    actions["doWork"] = new action("do work",{hunger:5.0},{hunger:-5.0,money:20.0});
-    actions["buyChicken"] = new action("buyChicken",{money:50.0},{chicken:1.0,money:-50.0});
+    actions["eatFood"] = new action("eat food",{food:{value:1.0,type:"min"}},{food:{value:-1.0,type:"modify"},hunger:{value:40.0,type:"modify"}});
+    actions["cookChicken"] = new action("cook chicken",{chicken:{value:1.0,type:"min"},hunger:{value:1.0,type:"min"}},{chicken:{value:-1.0, type:"modify"},food:{value:4.0, type:"modify"}, hunger:{value:-1.0, type:"modify"}});
+    actions["sellFood"] = new action("sell food",{food:{value:1.0,type:"min"}},{food:-1.0,money:10.0});
+    actions["buyFood"] = new action("buy food",{money:{value:20.0, type:"min"}},{food:1.0,money:-20.0});
+    actions["doWork"] = new action("do work",{hunger:{value:5.0, type:"min"}},{hunger:-5.0,money:20.0});
+    actions["buyChicken"] = new action("buy chicken",{money:{value:50.0, type:"min"}},{chicken:1.0,money:-50.0});
+    actions["moveTo"] = new action("move");
     
     myGameArea.start();
 }
@@ -49,8 +50,11 @@ var myGameArea = {
         var printout = "";
         while (testPlan["actions"].length > 0) { printout += ", " + testPlan["actions"].pop().name }
         this.output.innerHTML = "my chosen action is " + printout;
+        myGamePiece.mover.setTarget(new frvector([400.0,120.0]), 50);
+        
         this.interval = setInterval(updateGameArea, 17);
         
+        //updateGameArea();
     },
     
     clear : function() {
@@ -58,72 +62,62 @@ var myGameArea = {
     }
 }
 
-function component(width, height, color, x, y) {
-    this.width = width;
-    this.height = height;
-    this.x = x;
-    this.y = y;
-    this.update = function(){
-        ctx = myGameArea.context;
-        ctx.fillStyle = color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-    }
-    
-}
-
-function sourceArt(imageSrc) {
-    this.image = new Image(1024, 1024);
-    this.image.src = imageSrc;
-    
-    this.getImage = function(){
-        return this.image;
-    }
-}
-
-function doodadArt(doodadImage, x, y) {
-    this.image = doodadImage;
-    this.width = 32;
-    this.height = 32;
-    this.x = x * this.width;
-    this.y = y * this.height;
-    
-    this.getImage = function (){
-        return sourceArts[this.image].getImage();
-    }
-}
-              
-function doodad(x, y, art) {
-    this.x = x;
-    this.y = y;
-    this.art = art;
-    this.getImage = function(){
-        return doodadArts[this.art].getImage();
-    }
-    this.update = function(){
-        ctx = myGameArea.context;
-        ctx.drawImage(this.getImage(), doodadArts[this.art].x, doodadArts[this.art].y, 32, 32, this.x, this.y, 32, 32);
-    }
-    
-}
-
 function action(name, requirements, changes) {
     this.name = name;
     this.requirements = requirements;
     this.changes = changes;
+    
+    this.getRequirement = function(key){
+        if (typeof this.requirement[key] === 'object'){
+            return this.requirement[key].value;
+        } else {
+            return requirement[key];
+        }
+    }
+    
+    this.getReqType = function(key){
+        var result = "min";
+        if (typeof this.requirement[key] === 'object'){
+            result = this.requirement[key].type;
+        }
+        return result;
+    }
+    
+    this.getChange = function(key){
+        if (typeof this.changes[key] === 'object'){
+            return this.changes[key].value;
+        } else {
+            return this.changes[key];
+        }
+    }
+    
+    this.getChangeType = function(key){
+        var result = "modify";
+        if (typeof this.changes[key] === 'object'){
+            result = this.changes[key].type;
+        }
+        return result;
+    }
 }
 
-function character(charImage, x, y, attention, speed) {
+
+
+function character(charImage, pos, attention, speed) {
     this.image = new Image(96, 128);
     this.image.src = charImage;
     this.width = 32;
     this.height = 32;
-    this.x = x;
-    this.y = y;
+    //this.x = x;
+    //this.y = y;
+    this.pos = pos;
+    this.mover = new mover(pos, speed, speed);
     this.attention = attention;
     this.speed = speed;
-    this.update = function(){
-        ctx = myGameArea.context;
-        ctx.drawImage(this.image, 32, 0, 32, 32, this.x, this.y, 32, 32);
+    
+    this.update = function(dt = 17.0){
+        this.mover.update(dt);
+        var ctx = myGameArea.context;
+        ctx.drawImage(this.image, 32, 0, 32, 32, this.mover.x(), this.mover.y(), 32, 32);
     }
     
     this.appraisal = function(value, key) {
@@ -159,9 +153,15 @@ function character(charImage, x, y, attention, speed) {
     this.getEffect = function(currentState, changes) {
         var effect = 0.0;
         for (var key in changes) {
-            
+            var comparison;
+            var type = "modify";
+            if ( typeof changes[key] === 'object' ){
+                comparison = changes[key].value;
+            } else {
+                comparison = changes[key];
+            }
             if (currentState[key]){
-                var newState = currentState[key] + changes[key];
+                var newState = currentState[key] + comparison;
                 effect += this.appraisal(newState, key) - this.appraisal(currentState[key], key);
             }
         }
@@ -203,7 +203,6 @@ function character(charImage, x, y, attention, speed) {
                     }
                 } else {
                     if (actionPlan["effect"] == null) {
-                        //console.log("no effect exists, adding: " +actionList[currAction].name);
                         actionPlan["effect"] = comparedEffect;
                         actionPlan["actions"].push(actionList[currAction]);
                         
@@ -243,7 +242,6 @@ function character(charImage, x, y, attention, speed) {
                     }
                 } else {
                     if (actionPlan["effect"] == null) {
-                        //console.log("no effect exists, adding: " +actionList[currAction].name);
                         actionPlan["effect"] = comparedEffect;
                         actionPlan["actions"].push(actionList[currAction]);
                         
@@ -263,10 +261,17 @@ function character(charImage, x, y, attention, speed) {
     this.meetsReqs = function(currentState, currentAction){
         var result = true;
         for ( var req in currentAction.requirements){
-            
-            
-            if ( currentState[req] == undefined || (currentState[req] < currentAction.requirements[req]) ) {
-                result = false;
+            var comparison;
+            var type = "min";
+            if ( typeof currentAction.requirements[req] === 'object' ){
+                comparison = currentAction.requirements[req].value;
+            } else {
+                comparison = currentAction.requirements[req];
+            }
+            if (type = "min") {
+                if ( currentState[req] == undefined || (currentState[req] < comparison) ) {
+                    result = false;
+                }
             }
         }
         return result;
@@ -278,20 +283,218 @@ function character(charImage, x, y, attention, speed) {
             resultState[key] = currentState[key];
         }
         for (var key in changes) {
-            if ( resultState[key] == undefined ){
-                resultState[key] = 0.0;
+            var comparison;
+            var type = "modify";
+            if ( typeof changes[key] === 'object' ){
+                comparison = changes[key].value;
+                type = changes[key].type;
+            } else {
+                comparison = changes[key];
             }
-            resultState[key] += changes[key];
+            if (type = "modify") {
+                if ( resultState[key] == undefined ){
+                    resultState[key] = 0.0;
+                }
+                resultState[key] += comparison;
+            }
         }
         return resultState;
     }
 }
 
+function component(width, height, color, x, y) {
+    this.width = width;
+    this.height = height;
+    this.x = x;
+    this.y = y;
+    this.update = function(){
+        var ctx = myGameArea.context;
+        ctx.fillStyle = color;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+    
+}
+
+function doodad(pos, art) {
+    //this.x = x;
+    //this.y = y;
+    this.pos = pos;
+    this.art = art;
+    this.getImage = function(){
+        return doodadArts[this.art].getImage();
+    }
+    this.update = function(dt = 17.0){
+        var ctx = myGameArea.context;
+        ctx.drawImage(this.getImage(), doodadArts[this.art].x, doodadArts[this.art].y, 32, 32, this.pos.coords[0], this.pos.coords[1], 32, 32);
+    }
+    
+}
+
+function doodadArt(doodadImage, x, y) {
+    this.image = doodadImage;
+    this.width = 32;
+    this.height = 32;
+    this.x = x * this.width;
+    this.y = y * this.height;
+    
+    this.getImage = function (){
+        return sourceArts[this.image].getImage();
+    }
+}
+
+function frvector(coords) {
+    this.coords = coords;
+    
+    this.x = function(){
+        return this.coords[0];
+    }
+    
+    this.y = function(){
+        return this.coords[1];
+    }
+    
+    this.z = function(){
+        return this.coords[2];
+    }
+    
+    
+    
+    this.add = function(other) {
+        var result = new frvector([]);
+        if ( this.coords.length == other.coords.length) {
+            for (let i = 0; i < this.coords.length; i++) {
+                result.coords[i] = this.coords[i] + other.coords[i];
+            }
+        }
+        
+        return result;
+    }
+    
+    this.subtract = function(other) {
+        var result = new frvector([]);
+        if ( this.coords.length == other.coords.length) {
+            for (let i = 0; i < this.coords.length; i++) {
+                result.coords[i] = this.coords[i] - other.coords[i];
+            }
+        }
+        
+        return result;
+    }
+    
+    this.mult = function(amount){
+        var result = new frvector([]);
+        for (let i = 0; i < this.coords.length; i++) {
+            result.coords[i] = this.coords[i] * amount;
+        }
+        return result;
+    }
+    
+    this.mag = function() {
+        var result = 0.0;
+        for (let i = 0; i < this.coords.length; i++) {
+            result += this.coords[i]*this.coords[i];
+        }
+        return Math.sqrt(result);
+    }
+    
+    this.normalize = function() {
+        var result = new frvector([]);
+        var mag = this.mag();
+        
+        for (let i = 0; i < this.coords.length; i++) {
+            result.coords[i] = this.coords[i]/mag;
+        }
+        
+        return result;
+    }
+}
+
+function mover(pos, maxSpeed, maxAccel, size = 10.0, adjustTime = 0.1){
+    this.pos = pos;
+    this.maxSpeed = maxSpeed;
+    this.maxAccel = maxAccel;
+    this.size = size;
+    this.timeToTarget = adjustTime;
+    this.velocity = new frvector([0,0]);
+    this.acceleration = new frvector([0,0]);
+    this.currTarget = this.pos;
+    this.currTargetSize = 10.0;
+    
+    this.arriveWithTarget = function(target, targetSize = this.currTargetSize) {
+        // 1
+        var vector = target.subtract(this.pos);
+        var distance = vector.mag();
+        
+        // 2
+        var targetRadius = this.size + targetSize;
+        var slowRadius = targetRadius + 25;
+        
+        // 3
+        if (distance < targetRadius) {
+            this.velocity = new frvector([0.0,0.0]);
+            this.acceleration = new frvector([0.0,0.0]);
+            var result = new frvector([0.0,0.0]);
+            return result;
+        }
+        
+        // 4
+        var targetSpeed;
+        if (distance > slowRadius) {
+            targetSpeed = this.maxSpeed;
+        } else {
+            targetSpeed = this.maxSpeed * distance / slowRadius;
+        }
+        
+        // 5
+        var targetVelocity = vector.normalize().mult(targetSpeed);
+        
+        var acceleration = targetVelocity.subtract(this.velocity).mult(1.0/this.timeToTarget);
+        
+        // 6
+        if (acceleration.mag() > this.maxAcceleration) {
+            acceleration = acceleration.normalize().mult(this.maxAcceleration);
+        }
+        return acceleration;
+    }
+    
+    this.update = function(dt = 17.0){
+        this.acceleration = this.arriveWithTarget(this.currTarget);
+        this.velocity = this.velocity.add(this.acceleration.mult(dt/1000));
+        this.pos = this.pos.add(this.velocity.mult(dt/1000));
+    }
+    
+    this.setTarget = function(target = this.pos, targetSize = 10.0){
+        this.currTarget = target;
+        this.currTargetSize = targetSize;
+    }
+    
+    this.x = function(){
+        return this.pos.x();
+    }
+    
+    this.y = function(){
+        return this.pos.y();
+    }
+    
+    this.z = function(){
+        return this.pos.z();
+    }
+}
+
+function sourceArt(imageSrc) {
+    this.image = new Image(1024, 1024);
+    this.image.src = imageSrc;
+    
+    this.getImage = function(){
+        return this.image;
+    }
+}
+
 function updateGameArea() {
     myGameArea.clear();
-    myGamePiece.update();
+    myGamePiece.update(17.0);
     for ( var val of doodads){
-        val.update();
+        val.update(17.0);
     }
 }
 
