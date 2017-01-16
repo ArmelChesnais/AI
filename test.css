@@ -1,0 +1,36 @@
+.toggled {
+    height: 50px;
+    width: 200px;
+    border-bottom: 1px solid black;
+    -webkit-transition: height 200ms linear; /* Safari */
+    transition: height 200ms linear;
+}
+
+.container .hidden:nth-child(2) {
+    height: 100px;
+}
+
+@media(max-width: 500px) {
+    .toggled {
+        width: 100%;
+    }
+}
+
+#gameArea {
+    height: 500px;
+    width: 500px;
+    border: 1px solid black;
+    float: left;
+}
+
+canvas {
+    border: 1px solid #d3d3d3;
+    background-color: #f1f1f1;
+}
+
+#textArea {
+    height: 500px;
+    width: 200px;
+    border: 1px solid black;
+    float: left;
+}
