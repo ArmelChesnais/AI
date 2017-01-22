@@ -1,4 +1,6 @@
 var myGamePiece;
+var player;
+var characters = new Array();
 var doodads = new Array();
 var doodadArts = new Array();
 var sourceArts = new Array();
@@ -9,24 +11,27 @@ var changesList = new Array();
 
 function gameStart() {
 
-//myGamePiece = new component(30, 30, "red", 10, 120);
+
+    player = new character("media/4.png", new frvector([120.0,120.0]), 8, 80.0);
     myGamePiece = new character("media/2.png", new frvector([10.0,120.0]), 8, 50.0);
+    characters.push(player);	
+    characters.push(myGamePiece);
     sourceArts["miscDoodads"] = new sourceArt("media/obj_misk_atlas.png");
     doodadArts["wood"] = new doodadArt("miscDoodads", 1, 12);
     doodadArts["chicken"] = new doodadArt("miscDoodads", 1, 26);
+    doodadArts["anvil"] = new doodadArt("miscDoodads", 6, 12);
     doodads.push( new doodad(new frvector([20, 50]), "wood") );
     doodads.push( new doodad(new frvector([50, 30]), "wood") );
     doodads.push( new doodad(new frvector([70, 200]), "chicken") );
-    worldState["hunger"] = 80.0;
+    doodads.push( new doodad(new frvector([120, 100]), "anvil") );
+    worldState["hunger"] = 10.0;
     worldState["hungerAmp"] = 100.0;
-    worldState["food"] = 10.0;
+    worldState["food"] = 0.0;
     worldState["chicken"] = 0.0;
     worldState["money"] = 20.0;
     worldState["moneyAmp"] = 0.50;
     changesList["hunger"] = 20.0;
     
-    //changesList["money"] = -10.0;
-    //changesList["test"] = 5.0;
     actions["eatFood"] = new action("eat food",{food:{value:1.0,type:"min"}},{food:{value:-1.0,type:"modify"},hunger:{value:40.0,type:"modify"}});
     actions["cookChicken"] = new action("cook chicken",{chicken:{value:1.0,type:"min"},hunger:{value:1.0,type:"min"}},{chicken:{value:-1.0, type:"modify"},food:{value:4.0, type:"modify"}, hunger:{value:-1.0, type:"modify"}});
     actions["sellFood"] = new action("sell food",{food:{value:1.0,type:"min"}},{food:-1.0,money:10.0});
@@ -45,12 +50,12 @@ var myGameArea = {
         this.canvas.width = 500;
         this.canvas.height = 500;
         this.context = this.canvas.getContext("2d");
-        //var test = myGamePiece.applyChanges(worldState, changesList);
         var testPlan = myGamePiece.makeForwardPlan(worldState, actions);
         var printout = "";
         while (testPlan["actions"].length > 0) { printout += ", " + testPlan["actions"].pop().name }
         this.output.innerHTML = "my chosen action is " + printout;
         myGamePiece.mover.setTarget(doodads[1].getPos());
+        player.mover.setTarget(doodads[1].getPos());
         
         this.interval = setInterval(updateGameArea, 17);
         
@@ -122,7 +127,7 @@ function changes(input) {
     }
 }
 
-function character(charImage, pos, attention, speed) {
+function character(charImage, pos, attention = 4, speed = 50.0, physicalized = false) {
     this.image = new Image(96, 128);
     this.image.src = charImage;
     this.width = 32;
@@ -130,16 +135,18 @@ function character(charImage, pos, attention, speed) {
     //this.x = x;
     //this.y = y;
     //this.pos = pos;
-    this.mover = new mover(pos, speed, speed);
+    this.mover = new mover(pos, speed, speed, physicalized);
     this.attention = attention;
     this.speed = speed;
 
     
     this.test = function() {
-        //console.log
+        //console.log()
         if ( 15 > this.mover.getPos().subtract(doodads[1].getPos()).mag() ) {
             this.mover.setTarget(doodads[2].getPos());
         } else if ( 15 > this.mover.getPos().subtract(doodads[2].getPos()).mag() ) {
+            this.mover.setTarget(doodads[3].getPos());
+        } else if ( 15 > this.mover.getPos().subtract(doodads[3].getPos()).mag() ) {
             this.mover.setTarget(doodads[1].getPos());
         }
     }
@@ -429,7 +436,7 @@ function frvector(coords) {
     }
 }
 
-function mover(pos, maxSpeed, maxAccel, size = 10.0, adjustTime = 0.1){
+function mover(pos, maxSpeed, maxAccel, size = 10.0, physicalized = true, adjustTime = 0.1){
     this.pos = pos;
     this.maxSpeed = maxSpeed;
     this.maxAccel = maxAccel;
@@ -540,11 +547,14 @@ function sourceArt(imageSrc) {
     }
 }
 
-function updateGameArea() {
+function updateGameArea(dt = 17.0) {
     myGameArea.clear();
     for ( var val of doodads){
-        val.update(17.0);
+        val.update(dt);
     }
-    myGamePiece.update(17.0);
+    //myGamePiece.update(17.0);
+    for ( var val of characters){
+        val.update(dt);
+    }
 }
 
